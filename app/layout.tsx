@@ -19,13 +19,13 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://gamefeed-eosin.vercel.app"),
+  metadataBase: new URL("https://brotgames.vercel.app"),
   title: "GameFeed",
   description: "Scroll games instead of videos",
   openGraph: {
     title: "GameFeed",
     description: "Scroll games instead of videos",
-    url: "https://gamefeed-eosin.vercel.app",
+    url: "https://brotgames.vercel.app",
     siteName: "GameFeed",
     images: [
       {

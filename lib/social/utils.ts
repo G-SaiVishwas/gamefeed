@@ -23,5 +23,5 @@ export function getSocialStats(slideId: string) {
 
 export function getSiteUrl(): string {
   if (typeof window !== "undefined") return window.location.origin;
-  return "https://gamefeed-eosin.vercel.app";
+  return "https://brotgames.vercel.app";
 }
