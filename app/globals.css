@@ -1,0 +1,174 @@
+@import "tailwindcss";
+
+:root {
+  --background: #06060a;
+  --foreground: #fafafa;
+  --surface: #0c0c14;
+  --muted: #71717a;
+  --accent: #6366f1;
+  --accent-violet: #a855f7;
+  --accent-cyan: #22d3ee;
+  --accent-magenta: #ec4899;
+  --accent-glow: rgba(99, 102, 241, 0.45);
+  --neon-indigo: #818cf8;
+  --neon-violet: #c084fc;
+  --neon-cyan: #67e8f9;
+  --neon-magenta: #f472b6;
+  --neon-red: #fb7185;
+  --phone-bezel: #1a1a24;
+  --phone-screen: #06060a;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-space-grotesk);
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
+
+input,
+button {
+  font-family: inherit;
+}
+
+/* Aurora background */
+.aurora-bg {
+  background: #06060a;
+  position: relative;
+  overflow: hidden;
+}
+
+.aurora-bg::before {
+  content: "";
+  position: absolute;
+  inset: -50%;
+  background:
+    radial-gradient(ellipse 60% 50% at 20% 30%, rgba(99, 102, 241, 0.18) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 80% 60%, rgba(168, 85, 247, 0.14) 0%, transparent 55%),
+    radial-gradient(ellipse 40% 35% at 50% 80%, rgba(34, 211, 238, 0.1) 0%, transparent 50%);
+  animation: aurora-shift 12s ease-in-out infinite alternate;
+}
+
+.aurora-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+@keyframes aurora-shift {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  100% { transform: translate(3%, 2%) rotate(2deg); }
+}
+
+/* Neon utilities */
+.neon-text {
+  text-shadow:
+    0 0 10px var(--accent-glow),
+    0 0 30px rgba(99, 102, 241, 0.25);
+}
+
+.neon-text-cyan {
+  text-shadow:
+    0 0 10px rgba(34, 211, 238, 0.5),
+    0 0 30px rgba(34, 211, 238, 0.2);
+}
+
+.neon-text-magenta {
+  text-shadow:
+    0 0 10px rgba(236, 72, 153, 0.5),
+    0 0 30px rgba(236, 72, 153, 0.2);
+}
+
+.neon-ring {
+  box-shadow:
+    0 0 0 1px rgba(99, 102, 241, 0.3),
+    0 0 20px rgba(99, 102, 241, 0.15),
+    inset 0 0 20px rgba(99, 102, 241, 0.05);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.neon-glow-indigo {
+  box-shadow:
+    0 0 20px rgba(99, 102, 241, 0.4),
+    0 0 60px rgba(99, 102, 241, 0.15);
+}
+
+.neon-glow-cyan {
+  box-shadow:
+    0 0 20px rgba(34, 211, 238, 0.4),
+    0 0 60px rgba(34, 211, 238, 0.15);
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes grid-scroll {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(40px); }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora-bg::before {
+    animation: none;
+  }
+  .animate-pulse-glow,
+  .animate-float {
+    animation: none;
+  }
+}
