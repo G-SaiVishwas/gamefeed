@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { GameMeta, GameResult } from "@/lib/games/types";
 import { track } from "@/lib/analytics";
+import FeedSocialRail from "@/components/FeedSocialRail";
 
 interface GameSlideProps {
   game: GameMeta;
@@ -11,22 +12,38 @@ interface GameSlideProps {
   isActive: boolean;
 }
 
+const HINT_DURATION_MS = 1600;
+
 export default function GameSlide({ game, gameIndex, isActive }: GameSlideProps) {
   const [finished, setFinished] = useState(false);
   const [finalScore, setFinalScore] = useState(0);
+  const [hintVisible, setHintVisible] = useState(true);
+  const [gameReady, setGameReady] = useState(false);
   const GameComponent = game.component;
   const viewedRef = useRef(false);
   const startedRef = useRef(false);
+
+  useEffect(() => {
+    if (!isActive) {
+      viewedRef.current = false;
+      startedRef.current = false;
+      return;
+    }
+
+    const startTimer = setTimeout(() => setGameReady(true), HINT_DURATION_MS);
+    const hideTimer = setTimeout(() => setHintVisible(false), HINT_DURATION_MS + 400);
+
+    return () => {
+      clearTimeout(startTimer);
+      clearTimeout(hideTimer);
+    };
+  }, [isActive]);
 
   useEffect(() => {
     if (isActive && !viewedRef.current) {
       viewedRef.current = true;
       track("game_viewed", { gameId: game.id, gameIndex });
       track("games_reached", { count: gameIndex + 1 });
-    }
-    if (!isActive) {
-      viewedRef.current = false;
-      startedRef.current = false;
     }
   }, [isActive, game.id, gameIndex]);
 
@@ -56,10 +73,62 @@ export default function GameSlide({ game, gameIndex, isActive }: GameSlideProps)
   return (
     <div className="relative h-full w-full overflow-hidden bg-[#06060a]">
       <GameComponent
-        isActive={isActive}
+        isActive={isActive && gameReady}
         onStart={handleStart}
         onComplete={handleComplete}
       />
+
+      {isActive && <FeedSocialRail slideId={game.id} />}
+
+      {/* Bottom caption — Instagram style */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-6 z-30 px-4 pr-16">
+        <p className="mb-1 text-sm font-bold text-white drop-shadow-md">@gamefeed</p>
+        <p className="text-sm text-white/90 drop-shadow-md">
+          <span className="font-semibold">{game.title}</span>
+          {" · "}
+          {game.hint}
+        </p>
+        {gameIndex === 0 && (
+          <p className="mt-1.5 text-xs text-white/50">Swipe ↑ for the next game</p>
+        )}
+      </div>
+
+      {/* Hint overlay before game starts */}
+      <AnimatePresence>
+        {isActive && hintVisible && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-black/50 backdrop-blur-[2px]"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="mx-6 rounded-2xl border border-white/10 bg-black/60 px-6 py-5 text-center backdrop-blur-md"
+            >
+              <p
+                className="mb-1 text-lg font-bold text-white"
+                style={{ fontFamily: "var(--font-space-grotesk)" }}
+              >
+                {game.title}
+              </p>
+              <p className="text-sm text-white/70">{game.hint}</p>
+              {!gameReady && (
+                <motion.p
+                  animate={{ opacity: [0.4, 1, 0.4] }}
+                  transition={{ repeat: Infinity, duration: 1.2 }}
+                  className="mt-3 text-xs font-medium uppercase tracking-widest text-indigo-400"
+                >
+                  Starting...
+                </motion.p>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {finished && isActive && (
@@ -68,9 +137,8 @@ export default function GameSlide({ game, gameIndex, isActive }: GameSlideProps)
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             transition={{ delay: 0.4, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="pointer-events-none absolute inset-x-0 bottom-0 z-30 flex flex-col items-center pb-10"
+            className="pointer-events-none absolute inset-x-0 bottom-0 z-30 flex flex-col items-center pb-24"
           >
-            {/* Score summary card */}
             <motion.div
               initial={{ scale: 0.8 }}
               animate={{ scale: 1 }}
@@ -88,7 +156,6 @@ export default function GameSlide({ game, gameIndex, isActive }: GameSlideProps)
               </p>
             </motion.div>
 
-            {/* Swipe hint */}
             <motion.div
               animate={{ y: [0, -8, 0] }}
               transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}

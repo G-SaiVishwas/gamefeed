@@ -15,5 +15,6 @@ export interface GameComponentProps {
 export interface GameMeta {
   id: string;
   title: string;
+  hint: string;
   component: ComponentType<GameComponentProps>;
 }

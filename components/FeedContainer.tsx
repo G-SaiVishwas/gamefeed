@@ -176,7 +176,7 @@ export default function FeedContainer() {
       )}
 
       {/* Neon progress indicator */}
-      <div className="pointer-events-none absolute right-3 top-1/2 z-30 flex -translate-y-1/2 flex-col gap-2">
+      <div className="pointer-events-none absolute left-3 top-1/2 z-30 flex -translate-y-1/2 flex-col gap-2">
         {Array.from({ length: TOTAL_SLIDES }).map((_, i) => {
           const active = i === currentIndex;
           const color = SLIDE_COLORS[i] ?? "#6366f1";
