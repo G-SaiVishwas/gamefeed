@@ -50,6 +50,22 @@ That's it — the feed picks it up automatically.
 - Tailwind CSS
 - Framer Motion
 
+## Waitlist Backend
+
+Waitlist signups are stored server-side in **Upstash Redis** (not in the user's browser).
+
+- **Submit:** `POST /api/waitlist` with `{ name, email }`
+- **View signups:** [https://gamefeed.vercel.app/admin](https://gamefeed.vercel.app/admin) (password = `ADMIN_SECRET`)
+- **Export:** CSV download from the admin page
+
+### Setup (one-time)
+
+1. In [Vercel Dashboard](https://vercel.com) → your **gamefeed** project → **Storage** → **Create Database** → **Upstash Redis** → Connect
+2. Add environment variable `ADMIN_SECRET` (Settings → Environment Variables) — pick a strong password
+3. Redeploy
+
+Local dev: copy `.env.example` to `.env.local` and fill in the Upstash credentials.
+
 ## Deploy on Vercel
 
 This app lives in the `gamefeed/` subdirectory of the monorepo. When importing to Vercel:

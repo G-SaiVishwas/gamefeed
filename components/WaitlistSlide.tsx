@@ -41,23 +41,39 @@ export default function WaitlistSlide({ isActive }: WaitlistSlideProps) {
     if (!name.trim() || !email.trim() || loading) return;
 
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 600));
 
-    track("waitlist_submitted", { name: name.trim(), email: email.trim() });
+    try {
+      const res = await fetch("/api/waitlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim(), email: email.trim() }),
+      });
 
-    setConfetti(
-      Array.from({ length: 30 }, (_, i) => ({
-        id: i,
-        x: Math.random() * 100,
-        y: Math.random() * 100,
-        color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
-        rotation: Math.random() * 360,
-        delay: Math.random() * 0.5,
-      }))
-    );
+      const data = await res.json();
 
-    setSubmitted(true);
-    setLoading(false);
+      if (!res.ok) {
+        throw new Error(data.error ?? "Failed to join waitlist");
+      }
+
+      track("waitlist_submitted", { name: name.trim(), email: email.trim() });
+
+      setConfetti(
+        Array.from({ length: 30 }, (_, i) => ({
+          id: i,
+          x: Math.random() * 100,
+          y: Math.random() * 100,
+          color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+          rotation: Math.random() * 360,
+          delay: Math.random() * 0.5,
+        }))
+      );
+
+      setSubmitted(true);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!isActive && !submitted) return null;
