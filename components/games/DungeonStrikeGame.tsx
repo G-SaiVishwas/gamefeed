@@ -5,6 +5,11 @@ import type { GameComponentProps } from "@/lib/games/types";
 import { prepareCanvasFrame, useGameLifecycle } from "@/lib/games/hooks";
 import { useSprites } from "@/lib/games/useSprites";
 import { createBurst, drawParticles, updateParticles, type Particle } from "@/lib/games/effects";
+import {
+  angleDiff,
+  createProceduralWeapon,
+  tintSprite,
+} from "@/lib/games/dungeonHelpers";
 import GameHud from "@/components/GameHud";
 
 const SPRITES = {
@@ -20,17 +25,73 @@ const SPRITES = {
   chest: "/sprites/dungeon/chest.png",
 };
 
+type EnemyKind = "red" | "purple" | "blue" | "yellow" | "orange" | "dragon";
+type WeaponId = "sword" | "axe" | "spear" | "hammer";
+
 interface Enemy {
   x: number;
   y: number;
   vx: number;
   vy: number;
   hp: number;
-  kind: "red" | "purple" | "dragon";
+  maxHp: number;
+  kind: EnemyKind;
   id: number;
 }
 
+interface WeaponDef {
+  id: WeaponId;
+  name: string;
+  arc: number;
+  range: number;
+  damage: number;
+  cooldown: number;
+  particle: string;
+  unlockKills: number;
+}
+
+const WEAPONS: WeaponDef[] = [
+  { id: "sword", name: "Sword", arc: Math.PI * 0.55, range: 118, damage: 1, cooldown: 0.18, particle: "#f472b6", unlockKills: 0 },
+  { id: "axe", name: "Axe", arc: Math.PI * 0.78, range: 102, damage: 1, cooldown: 0.26, particle: "#fb923c", unlockKills: 5 },
+  { id: "spear", name: "Spear", arc: Math.PI * 0.32, range: 158, damage: 2, cooldown: 0.3, particle: "#67e8f9", unlockKills: 12 },
+  { id: "hammer", name: "Hammer", arc: Math.PI * 0.48, range: 96, damage: 2, cooldown: 0.36, particle: "#facc15", unlockKills: 20 },
+];
+
+const ENEMY_DEFS: Record<
+  EnemyKind,
+  { speed: number; hp: number; size: number; score: number; burst: string; weight: number }
+> = {
+  red: { speed: 1.25, hp: 1, size: 36, score: 100, burst: "#ef4444", weight: 28 },
+  purple: { speed: 1.05, hp: 1, size: 38, score: 120, burst: "#a855f7", weight: 24 },
+  blue: { speed: 0.78, hp: 2, size: 42, score: 160, burst: "#3b82f6", weight: 16 },
+  yellow: { speed: 1.55, hp: 1, size: 32, score: 130, burst: "#eab308", weight: 18 },
+  orange: { speed: 1.12, hp: 1, size: 36, score: 110, burst: "#f97316", weight: 20 },
+  dragon: { speed: 0.88, hp: 3, size: 52, score: 320, burst: "#dc2626", weight: 0 },
+};
+
 const MAX_MS = 45000;
+const COMBO_WINDOW_MS = 520;
+const SWIPE_MIN_PX = 28;
+
+function pickEnemyKind(kills: number, elapsed: number): EnemyKind {
+  if (kills > 0 && kills % 10 === 0 && Math.random() < 0.45) return "dragon";
+  const pool: EnemyKind[] = ["red", "purple"];
+  if (kills >= 2 || elapsed > 4000) pool.push("orange");
+  if (kills >= 4 || elapsed > 8000) pool.push("yellow");
+  if (kills >= 6 || elapsed > 12000) pool.push("blue");
+
+  let total = 0;
+  const weights = pool.map((k) => {
+    total += ENEMY_DEFS[k].weight;
+    return ENEMY_DEFS[k].weight;
+  });
+  let roll = Math.random() * total;
+  for (let i = 0; i < pool.length; i++) {
+    roll -= weights[i];
+    if (roll <= 0) return pool[i];
+  }
+  return pool[0];
+}
 
 export default function DungeonStrikeGame({ isActive, onStart, onComplete }: GameComponentProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -38,11 +99,28 @@ export default function DungeonStrikeGame({ isActive, onStart, onComplete }: Gam
   const sprites = useSprites(SPRITES);
   const [score, setScore] = useState(0);
   const [combo, setCombo] = useState(0);
+  const [weaponLabel, setWeaponLabel] = useState("Sword");
 
   useEffect(() => {
     if (!isActive || !sprites) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
+
+    const enemySprites: Partial<Record<EnemyKind, CanvasImageSource>> = {
+      red: sprites.red,
+      purple: sprites.purple,
+      dragon: sprites.dragon,
+      blue: tintSprite(sprites.red, "#5b9cf5"),
+      yellow: tintSprite(sprites.purple, "#f5d547"),
+      orange: tintSprite(sprites.red, "#f5924a"),
+    };
+
+    const weaponSprites: Record<WeaponId, CanvasImageSource> = {
+      sword: sprites.sword,
+      axe: createProceduralWeapon("axe"),
+      spear: createProceduralWeapon("spear"),
+      hammer: createProceduralWeapon("hammer"),
+    };
 
     const state = {
       running: true,
@@ -57,97 +135,243 @@ export default function DungeonStrikeGame({ isActive, onStart, onComplete }: Gam
       nextId: 1,
       swingTimer: 0,
       swingAngle: 0,
+      swingArc: Math.PI * 0.55,
+      swingRange: 118,
+      cooldown: 0,
+      lastSlashAt: 0,
+      weaponIdx: 0,
+      unlockedWeapons: 1,
       layoutW: 0,
       layoutH: 0,
       scale: 1,
+      pointerId: -1,
+      swipeStart: null as { x: number; y: number } | null,
+      swipeEnd: null as { x: number; y: number } | null,
     };
 
     queueMicrotask(() => {
       setScore(0);
       setCombo(0);
+      setWeaponLabel("Sword");
     });
 
-    const spawn = (w: number, h: number, scale: number, elapsed: number) => {
-      const cx = w / 2;
-      const cy = h / 2;
-      const edge = Math.floor(Math.random() * 4);
-      let x = cx;
-      let y = cy;
-      const margin = Math.round(40 * scale);
-      if (edge === 0) {
-        x = Math.random() * w;
-        y = margin;
-      } else if (edge === 1) {
-        x = w - margin;
-        y = Math.random() * h;
-      } else if (edge === 2) {
-        x = Math.random() * w;
-        y = h - margin;
-      } else {
-        x = margin;
-        y = Math.random() * h;
+    const currentWeapon = () => WEAPONS[state.weaponIdx];
+
+    const unlockWeapons = () => {
+      let changed = false;
+      while (
+        state.unlockedWeapons < WEAPONS.length &&
+        state.kills >= WEAPONS[state.unlockedWeapons].unlockKills
+      ) {
+        state.unlockedWeapons += 1;
+        state.weaponIdx = state.unlockedWeapons - 1;
+        changed = true;
       }
-      const isDragon = state.kills > 0 && state.kills % 8 === 0 && Math.random() < 0.5;
-      const speed = (1.1 + Math.random() * 0.8 + state.kills * 0.025 + elapsed * 0.00002) * scale;
-      const ang = Math.atan2(cy - y, cx - x);
-      state.enemies.push({
-        id: state.nextId++,
-        x,
-        y,
-        vx: Math.cos(ang) * speed,
-        vy: Math.sin(ang) * speed,
-        hp: isDragon ? 3 : 1,
-        kind: isDragon ? "dragon" : Math.random() < 0.5 ? "red" : "purple",
-      });
-      if (state.kills >= 3 && Math.random() < 0.4) {
-        const ang2 = ang + (Math.random() - 0.5) * 0.6;
-        state.enemies.push({
-          id: state.nextId++,
-          x: x + (Math.random() - 0.5) * 30,
-          y: y + (Math.random() - 0.5) * 30,
-          vx: Math.cos(ang2) * speed * 0.9,
-          vy: Math.sin(ang2) * speed * 0.9,
-          hp: 1,
-          kind: Math.random() < 0.5 ? "red" : "purple",
-        });
+      if (changed) {
+        const w = currentWeapon();
+        queueMicrotask(() => setWeaponLabel(w.name));
       }
     };
 
-    const onPointerDown = (e: PointerEvent) => {
-      const rect = canvas.getBoundingClientRect();
-      const tx = e.clientX - rect.left;
-      const ty = e.clientY - rect.top;
-      const tapR = Math.round(44 * state.scale);
-      let hit: Enemy | null = null;
-      let best = 9999;
+    const spawnOne = (
+      w: number,
+      h: number,
+      scale: number,
+      elapsed: number,
+      originX: number,
+      originY: number,
+      kind?: EnemyKind
+    ) => {
+      const cx = w / 2;
+      const cy = h / 2;
+      const k = kind ?? pickEnemyKind(state.kills, elapsed);
+      const def = ENEMY_DEFS[k];
+      const speed =
+        (def.speed + Math.random() * 0.35 + state.kills * 0.018 + elapsed * 0.000015) * scale;
+      const ang = Math.atan2(cy - originY, cx - originX);
+      state.enemies.push({
+        id: state.nextId++,
+        x: originX + (Math.random() - 0.5) * 36 * scale,
+        y: originY + (Math.random() - 0.5) * 36 * scale,
+        vx: Math.cos(ang) * speed,
+        vy: Math.sin(ang) * speed,
+        hp: def.hp,
+        maxHp: def.hp,
+        kind: k,
+      });
+    };
+
+    const spawnSwarm = (w: number, h: number, scale: number, elapsed: number) => {
+      const cx = w / 2;
+      const cy = h / 2;
+      const margin = Math.round(36 * scale);
+      const edge = Math.floor(Math.random() * 4);
+      let ox = cx;
+      let oy = cy;
+      if (edge === 0) {
+        ox = Math.random() * w;
+        oy = margin;
+      } else if (edge === 1) {
+        ox = w - margin;
+        oy = Math.random() * h;
+      } else if (edge === 2) {
+        ox = Math.random() * w;
+        oy = h - margin;
+      } else {
+        ox = margin;
+        oy = Math.random() * h;
+      }
+
+      const baseCount = 2 + Math.floor(elapsed / 12000);
+      const count = Math.min(8, baseCount + Math.floor(Math.random() * 3));
+      const kinds: EnemyKind[] = [];
+      for (let i = 0; i < count; i++) kinds.push(pickEnemyKind(state.kills, elapsed));
+      if (count >= 4 && Math.random() < 0.35) {
+        kinds[Math.floor(Math.random() * count)] = "dragon";
+      }
+      for (const kind of kinds) spawnOne(w, h, scale, elapsed, ox, oy, kind);
+    };
+
+    const cycleWeapon = () => {
+      if (state.unlockedWeapons <= 1) return;
+      state.weaponIdx = (state.weaponIdx + 1) % state.unlockedWeapons;
+      queueMicrotask(() => setWeaponLabel(currentWeapon().name));
+    };
+
+    const performSlash = (angle: number) => {
+      const weapon = currentWeapon();
+      if (state.cooldown > 0) return;
+
+      const cx = state.layoutW / 2;
+      const cy = state.layoutH / 2;
+      const range = weapon.range * state.scale;
+      const halfArc = weapon.arc / 2;
+      const now = performance.now();
+
+      state.swingTimer = 0.22;
+      state.swingAngle = angle;
+      state.swingArc = weapon.arc;
+      state.swingRange = weapon.range;
+      state.cooldown = weapon.cooldown;
+
+      if (now - state.lastSlashAt < COMBO_WINDOW_MS) {
+        state.combo += 1;
+      } else {
+        state.combo = 1;
+      }
+      state.lastSlashAt = now;
+
+      const comboBonus = Math.min(state.combo, 8);
+      let hitCount = 0;
+
       for (const en of state.enemies) {
-        const d = Math.hypot(en.x - tx, en.y - ty);
-        if (d < tapR && d < best) {
-          best = d;
-          hit = en;
+        const dx = en.x - cx;
+        const dy = en.y - cy;
+        const dist = Math.hypot(dx, dy);
+        const def = ENEMY_DEFS[en.kind];
+        const hitR = range + def.size * state.scale * 0.45;
+        if (dist > hitR) continue;
+        const enAng = Math.atan2(dy, dx);
+        if (angleDiff(enAng, angle) > halfArc) continue;
+
+        en.hp -= weapon.damage;
+        state.particles.push(
+          ...createBurst(en.x, en.y, 8 + comboBonus, def.burst, 2.5 + comboBonus * 0.15)
+        );
+        hitCount += 1;
+
+        if (en.hp <= 0) {
+          state.enemies = state.enemies.filter((e) => e.id !== en.id);
+          state.kills += 1;
+          state.score += def.score * comboBonus;
+          unlockWeapons();
         }
       }
-      if (!hit) return;
-      hit.hp -= 1;
-      state.swingTimer = 0.15;
-      state.swingAngle = Math.atan2(
-        hit.y - state.layoutH / 2,
-        hit.x - state.layoutW / 2
-      );
-      state.particles.push(...createBurst(hit.x, hit.y, 10, "#f472b6", 3));
-      if (hit.hp <= 0) {
-        state.enemies = state.enemies.filter((en) => en.id !== hit!.id);
-        state.kills += 1;
-        state.combo += 1;
-        state.score += 100 * state.combo;
+
+      if (hitCount > 0) {
+        state.particles.push(...createBurst(cx, cy, 6, weapon.particle, 2));
         queueMicrotask(() => {
           setScore(state.score);
           setCombo(state.combo);
         });
+      } else {
+        state.combo = 1;
+        queueMicrotask(() => setCombo(1));
+      }
+    };
+
+    const tryWeaponBarTap = (x: number, y: number): boolean => {
+      const h = state.layoutH;
+      const scale = state.scale;
+      const barY = h - Math.round(58 * scale);
+      if (y < barY) return false;
+      const cx = state.layoutW / 2;
+      const slotW = Math.round(52 * scale);
+      const totalW = slotW * state.unlockedWeapons;
+      const startX = cx - totalW / 2;
+      if (x < startX || x > startX + totalW) return false;
+      const idx = Math.floor((x - startX) / slotW);
+      if (idx >= 0 && idx < state.unlockedWeapons) {
+        state.weaponIdx = idx;
+        queueMicrotask(() => setWeaponLabel(currentWeapon().name));
+        return true;
+      }
+      return false;
+    };
+
+    const onPointerDown = (e: PointerEvent) => {
+      if (state.pointerId !== -1) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      state.pointerId = e.pointerId;
+      state.swipeStart = { x, y };
+      state.swipeEnd = { x, y };
+      canvas.setPointerCapture(e.pointerId);
+    };
+
+    const onPointerMove = (e: PointerEvent) => {
+      if (e.pointerId !== state.pointerId || !state.swipeStart) return;
+      const rect = canvas.getBoundingClientRect();
+      state.swipeEnd = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    };
+
+    const onPointerUp = (e: PointerEvent) => {
+      if (e.pointerId !== state.pointerId) return;
+      const rect = canvas.getBoundingClientRect();
+      const endX = e.clientX - rect.left;
+      const endY = e.clientY - rect.top;
+      state.swipeEnd = { x: endX, y: endY };
+
+      if (state.swipeStart) {
+        const dx = endX - state.swipeStart.x;
+        const dy = endY - state.swipeStart.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < SWIPE_MIN_PX * state.scale) {
+          if (tryWeaponBarTap(endX, endY)) {
+            /* weapon selected */
+          } else if (tryWeaponBarTap(state.swipeStart.x, state.swipeStart.y)) {
+            cycleWeapon();
+          }
+        } else {
+          performSlash(Math.atan2(dy, dx));
+        }
+      }
+
+      state.pointerId = -1;
+      state.swipeStart = null;
+      state.swipeEnd = null;
+      try {
+        canvas.releasePointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
       }
     };
 
     canvas.addEventListener("pointerdown", onPointerDown);
+    canvas.addEventListener("pointermove", onPointerMove);
+    canvas.addEventListener("pointerup", onPointerUp);
+    canvas.addEventListener("pointercancel", onPointerUp);
 
     let animId = 0;
     const loop = (now: number) => {
@@ -169,18 +393,20 @@ export default function DungeonStrikeGame({ isActive, onStart, onComplete }: Gam
       const heroR = Math.round(28 * scale);
 
       state.spawnTimer += 1 / 60;
-      if (state.spawnTimer > Math.max(0.45, 1.0 - elapsed * 0.00002)) {
+      const spawnInterval = Math.max(0.32, 1.05 - elapsed * 0.000025 - state.kills * 0.004);
+      if (state.spawnTimer > spawnInterval) {
         state.spawnTimer = 0;
-        spawn(w, h, scale, elapsed);
+        spawnSwarm(w, h, scale, elapsed);
       }
 
       for (const en of state.enemies) {
         en.x += en.vx;
         en.y += en.vy;
-        if (Math.hypot(en.x - cx, en.y - cy) < heroR + Math.round(4 * scale)) {
+        if (Math.hypot(en.x - cx, en.y - cy) < heroR + Math.round(6 * scale)) {
           state.hearts -= 1;
           state.combo = 1;
           state.enemies = state.enemies.filter((e) => e.id !== en.id);
+          state.particles.push(...createBurst(en.x, en.y, 14, ENEMY_DEFS[en.kind].burst, 4));
           queueMicrotask(() => setCombo(1));
           if (state.hearts <= 0) {
             state.running = false;
@@ -190,6 +416,7 @@ export default function DungeonStrikeGame({ isActive, onStart, onComplete }: Gam
       }
 
       if (state.swingTimer > 0) state.swingTimer -= 1 / 60;
+      if (state.cooldown > 0) state.cooldown -= 1 / 60;
       state.particles = updateParticles(state.particles, 1 / 60);
 
       if (elapsed >= MAX_MS) {
@@ -229,29 +456,106 @@ export default function DungeonStrikeGame({ isActive, onStart, onComplete }: Gam
       }
 
       const decorSize = Math.round(44 * scale);
-      ctx.drawImage(sprites.campfire, w - decorSize - Math.round(16 * scale), h - decorSize - Math.round(60 * scale), decorSize, decorSize);
-      ctx.drawImage(sprites.chest, Math.round(16 * scale), h - decorSize - Math.round(60 * scale), decorSize, decorSize);
+      ctx.drawImage(
+        sprites.campfire,
+        w - decorSize - Math.round(16 * scale),
+        h - decorSize - Math.round(60 * scale),
+        decorSize,
+        decorSize
+      );
+      ctx.drawImage(
+        sprites.chest,
+        Math.round(16 * scale),
+        h - decorSize - Math.round(60 * scale),
+        decorSize,
+        decorSize
+      );
 
       for (const en of state.enemies) {
-        const img =
-          en.kind === "dragon" ? sprites.dragon : en.kind === "red" ? sprites.red : sprites.purple;
-        const size = Math.round((en.kind === "dragon" ? 52 : 38) * scale);
+        const img = enemySprites[en.kind] ?? sprites.red;
+        const def = ENEMY_DEFS[en.kind];
+        const size = Math.round(def.size * scale);
         ctx.drawImage(img, en.x - size / 2, en.y - size / 2, size, size);
+        if (en.maxHp > 1 && en.hp < en.maxHp) {
+          const barW = size;
+          ctx.fillStyle = "rgba(43,43,58,0.25)";
+          ctx.fillRect(en.x - barW / 2, en.y - size / 2 - Math.round(6 * scale), barW, Math.round(4 * scale));
+          ctx.fillStyle = def.burst;
+          ctx.fillRect(
+            en.x - barW / 2,
+            en.y - size / 2 - Math.round(6 * scale),
+            barW * (en.hp / en.maxHp),
+            Math.round(4 * scale)
+          );
+        }
       }
 
       const heroSize = Math.round(56 * scale);
       ctx.drawImage(sprites.hero, cx - heroSize / 2, cy - heroSize / 2, heroSize, heroSize);
 
+      const weapon = currentWeapon();
       if (state.swingTimer > 0) {
-        const swordSize = Math.round(40 * scale);
+        const t = state.swingTimer / 0.22;
+        const weaponImg = weaponSprites[weapon.id];
+        const swordSize = Math.round(44 * scale);
         ctx.save();
         ctx.translate(cx, cy);
         ctx.rotate(state.swingAngle);
-        ctx.drawImage(sprites.sword, Math.round(10 * scale), -swordSize / 2, swordSize, swordSize);
+        ctx.globalAlpha = 0.85 + t * 0.15;
+        ctx.drawImage(weaponImg, Math.round(12 * scale), -swordSize / 2, swordSize, swordSize);
+
+        ctx.strokeStyle = weapon.particle;
+        ctx.lineWidth = Math.round(3 * scale);
+        ctx.globalAlpha = 0.35 * t;
+        ctx.beginPath();
+        ctx.arc(0, 0, state.swingRange * scale * (1 - t * 0.2), state.swingAngle - state.swingArc / 2, state.swingAngle + state.swingArc / 2);
+        ctx.stroke();
         ctx.restore();
       }
 
+      if (state.swipeStart && state.swipeEnd && state.pointerId !== -1) {
+        const dx = state.swipeEnd.x - state.swipeStart.x;
+        const dy = state.swipeEnd.y - state.swipeStart.y;
+        if (Math.hypot(dx, dy) > 8 * scale) {
+          ctx.strokeStyle = "rgba(168,85,247,0.45)";
+          ctx.lineWidth = Math.round(3 * scale);
+          ctx.setLineDash([Math.round(6 * scale), Math.round(4 * scale)]);
+          ctx.beginPath();
+          ctx.moveTo(state.swipeStart.x, state.swipeStart.y);
+          ctx.lineTo(state.swipeEnd.x, state.swipeEnd.y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+      }
+
       drawParticles(ctx, state.particles);
+
+      const barY = h - Math.round(52 * scale);
+      const slotW = Math.round(48 * scale);
+      const slotH = Math.round(48 * scale);
+      const totalW = slotW * state.unlockedWeapons;
+      const barX = cx - totalW / 2;
+      for (let i = 0; i < state.unlockedWeapons; i++) {
+        const wDef = WEAPONS[i];
+        const sx = barX + i * slotW + Math.round(4 * scale);
+        const sy = barY;
+        const active = i === state.weaponIdx;
+        ctx.fillStyle = active ? "#ffffff" : "rgba(255,255,255,0.75)";
+        ctx.strokeStyle = "#2b2b3a";
+        ctx.lineWidth = active ? 3 : 2;
+        ctx.beginPath();
+        ctx.roundRect(sx, sy, slotW - Math.round(8 * scale), slotH, Math.round(8 * scale));
+        ctx.fill();
+        ctx.stroke();
+        const iconSize = Math.round(28 * scale);
+        ctx.drawImage(
+          weaponSprites[wDef.id],
+          sx + (slotW - Math.round(8 * scale) - iconSize) / 2,
+          sy + Math.round(8 * scale),
+          iconSize,
+          iconSize
+        );
+      }
 
       animId = requestAnimationFrame(loop);
     };
@@ -260,6 +564,9 @@ export default function DungeonStrikeGame({ isActive, onStart, onComplete }: Gam
     return () => {
       cancelAnimationFrame(animId);
       canvas.removeEventListener("pointerdown", onPointerDown);
+      canvas.removeEventListener("pointermove", onPointerMove);
+      canvas.removeEventListener("pointerup", onPointerUp);
+      canvas.removeEventListener("pointercancel", onPointerUp);
       state.running = false;
     };
   }, [isActive, sprites, complete]);
@@ -275,7 +582,13 @@ export default function DungeonStrikeGame({ isActive, onStart, onComplete }: Gam
   return (
     <div className="relative h-full w-full touch-none">
       <canvas ref={canvasRef} className="block h-full w-full" />
-      <GameHud title="Dungeon Strike" score={score} accentColor="#a855f7" combo={combo > 1 ? combo : undefined} />
+      <GameHud
+        title="Swipe Slasher"
+        score={score}
+        accentColor="#a855f7"
+        combo={combo > 1 ? combo : undefined}
+        subtitle={weaponLabel}
+      />
     </div>
   );
 }

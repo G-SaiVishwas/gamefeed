@@ -19,8 +19,8 @@ export const GAMES: GameMeta[] = [
   },
   {
     id: "dungeon-strike",
-    title: "Dungeon Strike",
-    hint: "Tap enemies before they reach you",
+    title: "Swipe Slasher",
+    hint: "Swipe to slash swarms — tap weapons to swap",
     component: DungeonStrikeGame,
   },
   {

@@ -136,12 +136,12 @@ export const ASSET_PACK_OPTIONS: AssetPackOption[] = [
     description: "Doodle heroes, corridors, hand-drawn charm.",
     emoji: "🗡️",
     previewBg: "#f4ecd8",
-    includes: "12 sprites",
+    includes: "12+ sprites",
     previews: [
       { src: "/sprites/dungeon/green_character.png", label: "Hero" },
-      { src: "/sprites/dungeon/red_character.png", label: "Foe" },
+      { src: "/sprites/dungeon/red_character.png", label: "Swarm" },
       { src: "/sprites/dungeon/dragon.png", label: "Boss" },
-      { src: "/sprites/dungeon/weapon_sword.png", label: "Weapon" },
+      { src: "/sprites/dungeon/weapon_sword.png", label: "Sword" },
     ],
   },
   {
