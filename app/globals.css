@@ -1,22 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --background: #06060a;
-  --foreground: #fafafa;
-  --surface: #0c0c14;
-  --muted: #71717a;
-  --accent: #6366f1;
+  --background: #fdf6e3;
+  --foreground: #2b2b3a;
+  --surface: #ffffff;
+  --muted: #6b7280;
+  --accent: #3b82f6;
   --accent-violet: #a855f7;
   --accent-cyan: #22d3ee;
   --accent-magenta: #ec4899;
-  --accent-glow: rgba(99, 102, 241, 0.45);
-  --neon-indigo: #818cf8;
-  --neon-violet: #c084fc;
-  --neon-cyan: #67e8f9;
-  --neon-magenta: #f472b6;
-  --neon-red: #fb7185;
-  --phone-bezel: #1a1a24;
-  --phone-screen: #06060a;
+  --accent-glow: rgba(59, 130, 246, 0.35);
+  --phone-bezel: #e8e0d4;
+  --phone-screen: #fdf6e3;
 }
 
 @theme inline {
@@ -59,9 +54,17 @@ button {
   font-family: inherit;
 }
 
-/* Aurora background */
+.feed-locked {
+  position: fixed;
+  inset: 0;
+  height: 100dvh;
+  width: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 .aurora-bg {
-  background: #06060a;
+  background: linear-gradient(180deg, #bfe9ff 0%, #fdf6e3 55%, #ffe8cc 100%);
   position: relative;
   overflow: hidden;
 }
@@ -69,90 +72,53 @@ button {
 .aurora-bg::before {
   content: "";
   position: absolute;
-  inset: -50%;
-  background:
-    radial-gradient(ellipse 60% 50% at 20% 30%, rgba(99, 102, 241, 0.18) 0%, transparent 60%),
-    radial-gradient(ellipse 50% 40% at 80% 60%, rgba(168, 85, 247, 0.14) 0%, transparent 55%),
-    radial-gradient(ellipse 40% 35% at 50% 80%, rgba(34, 211, 238, 0.1) 0%, transparent 50%);
-  animation: aurora-shift 12s ease-in-out infinite alternate;
-}
-
-.aurora-bg::after {
-  content: "";
-  position: absolute;
   inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-  opacity: 0.5;
+  background-image: radial-gradient(circle, rgba(43, 43, 58, 0.08) 1px, transparent 1px);
+  background-size: 18px 18px;
+  opacity: 0.35;
   pointer-events: none;
 }
 
-@keyframes aurora-shift {
-  0% { transform: translate(0, 0) rotate(0deg); }
-  100% { transform: translate(3%, 2%) rotate(2deg); }
+.aurora-bg::after {
+  content: none;
 }
 
-/* Neon utilities */
 .neon-text {
-  text-shadow:
-    0 0 10px var(--accent-glow),
-    0 0 30px rgba(99, 102, 241, 0.25);
+  text-shadow: 2px 2px 0 rgba(43, 43, 58, 0.15);
 }
 
 .neon-text-cyan {
-  text-shadow:
-    0 0 10px rgba(34, 211, 238, 0.5),
-    0 0 30px rgba(34, 211, 238, 0.2);
+  text-shadow: 2px 2px 0 rgba(34, 211, 238, 0.25);
 }
 
 .neon-text-magenta {
-  text-shadow:
-    0 0 10px rgba(236, 72, 153, 0.5),
-    0 0 30px rgba(236, 72, 153, 0.2);
+  text-shadow: 2px 2px 0 rgba(236, 72, 153, 0.25);
 }
 
-.neon-ring {
-  box-shadow:
-    0 0 0 1px rgba(99, 102, 241, 0.3),
-    0 0 20px rgba(99, 102, 241, 0.15),
-    inset 0 0 20px rgba(99, 102, 241, 0.05);
-}
-
+.neon-ring,
 .glass-card {
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #ffffff;
+  border: 3px solid #2b2b3a;
+  box-shadow: 4px 4px 0 #2b2b3a;
+  border-radius: 1rem;
 }
 
 .neon-glow-indigo {
-  box-shadow:
-    0 0 20px rgba(99, 102, 241, 0.4),
-    0 0 60px rgba(99, 102, 241, 0.15);
+  box-shadow: 4px 4px 0 #2b2b3a;
 }
 
 .neon-glow-cyan {
-  box-shadow:
-    0 0 20px rgba(34, 211, 238, 0.4),
-    0 0 60px rgba(34, 211, 238, 0.15);
+  box-shadow: 4px 4px 0 #2b2b3a;
 }
 
 @keyframes pulse-glow {
-  0%, 100% { opacity: 0.6; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.05); }
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
 }
 
 @keyframes float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-8px); }
-}
-
-@keyframes shimmer {
-  0% { background-position: -200% center; }
-  100% { background-position: 200% center; }
-}
-
-@keyframes grid-scroll {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(40px); }
 }
 
 .animate-pulse-glow {
@@ -164,9 +130,6 @@ button {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .aurora-bg::before {
-    animation: none;
-  }
   .animate-pulse-glow,
   .animate-float {
     animation: none;

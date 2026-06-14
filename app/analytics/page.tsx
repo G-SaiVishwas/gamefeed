@@ -11,10 +11,10 @@ import {
 import { GAMES } from "@/lib/games/registry";
 
 const GAME_COLORS: Record<string, string> = {
-  dodge: "#818cf8",
-  "tap-rush": "#c084fc",
-  stack: "#67e8f9",
-  reaction: "#f472b6",
+  "coin-dash": "#4ade80",
+  "tank-arena": "#3b82f6",
+  "dungeon-strike": "#a855f7",
+  artillery: "#eab308",
 };
 
 function MetricCard({

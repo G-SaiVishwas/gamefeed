@@ -1,34 +1,34 @@
-import DodgeGame from "@/components/games/DodgeGame";
-import TapRushGame from "@/components/games/TapRushGame";
-import StackGame from "@/components/games/StackGame";
-import ReactionGame from "@/components/games/ReactionGame";
+import CoinDashGame from "@/components/games/CoinDashGame";
+import TankArenaGame from "@/components/games/TankArenaGame";
+import DungeonStrikeGame from "@/components/games/DungeonStrikeGame";
+import ArtilleryDuelGame from "@/components/games/ArtilleryDuelGame";
 import type { GameMeta } from "./types";
 
 export const GAMES: GameMeta[] = [
   {
-    id: "dodge",
-    title: "Dodge",
-    hint: "Drag to dodge the falling shards",
-    component: DodgeGame,
+    id: "coin-dash",
+    title: "Coin Dash",
+    hint: "Tap top to jump, bottom to duck — one life only",
+    component: CoinDashGame,
   },
   {
-    id: "tap-rush",
-    title: "Tap Rush",
-    hint: "Tap orbs before they vanish",
-    component: TapRushGame,
+    id: "tank-arena",
+    title: "Tank Arena",
+    hint: "Drag to move — auto-aim blasts enemy tanks",
+    component: TankArenaGame,
   },
   {
-    id: "stack",
-    title: "Stack",
-    hint: "Tap to drop and stack blocks",
-    component: StackGame,
+    id: "dungeon-strike",
+    title: "Dungeon Strike",
+    hint: "Tap enemies before they reach you",
+    component: DungeonStrikeGame,
   },
   {
-    id: "reaction",
-    title: "Reaction",
-    hint: "Wait for white — then tap fast",
-    component: ReactionGame,
+    id: "artillery",
+    title: "Artillery Duel",
+    hint: "Tap the sky where you want the shell to land",
+    component: ArtilleryDuelGame,
   },
 ];
 
-export const TOTAL_SLIDES = GAMES.length + 1; // +1 for waitlist
+export const TOTAL_SLIDES = GAMES.length + 1;

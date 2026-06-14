@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
+import { Fredoka, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,7 +12,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const spaceGrotesk = Space_Grotesk({
+const displayFont = Fredoka({
   variable: "--font-space-grotesk",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
@@ -46,7 +46,7 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
   },
 };
 
@@ -55,7 +55,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#06060a",
+  themeColor: "#fdf6e3",
 };
 
 export default function RootLayout({
@@ -66,9 +66,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} h-full`}
+      className={`${geistSans.variable} ${geistMono.variable} ${displayFont.variable} h-full`}
     >
-      <body className="h-full overflow-hidden bg-[#06060a] text-white antialiased">
+      <body className="h-full overflow-hidden bg-[#fdf6e3] text-[#2b2b3a] antialiased">
         {children}
       </body>
     </html>

@@ -3,8 +3,10 @@ import PhoneFrame from "@/components/PhoneFrame";
 
 export default function Home() {
   return (
-    <PhoneFrame>
-      <FeedContainer />
-    </PhoneFrame>
+    <div className="feed-locked">
+      <PhoneFrame>
+        <FeedContainer />
+      </PhoneFrame>
+    </div>
   );
 }

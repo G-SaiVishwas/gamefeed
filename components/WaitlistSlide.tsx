@@ -82,10 +82,9 @@ export default function WaitlistSlide({ isActive }: WaitlistSlideProps) {
     <div className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden px-6">
       {/* Mesh gradient background */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute inset-0 bg-[#06060a]" />
-        <div className="absolute top-0 left-1/2 h-[60%] w-[80%] -translate-x-1/2 rounded-full bg-indigo-600/15 blur-[80px]" />
-        <div className="absolute bottom-0 right-0 h-[50%] w-[60%] rounded-full bg-violet-600/10 blur-[60px]" />
-        <div className="absolute top-1/3 left-0 h-[40%] w-[50%] rounded-full bg-cyan-500/8 blur-[50px]" />
+        <div className="absolute inset-0 bg-[#fdf6e3]" />
+        <div className="absolute top-0 left-1/2 h-[60%] w-[80%] -translate-x-1/2 rounded-full bg-sky-300/30 blur-[80px]" />
+        <div className="absolute bottom-0 right-0 h-[50%] w-[60%] rounded-full bg-amber-200/40 blur-[60px]" />
       </div>
 
       {/* Confetti burst */}
@@ -120,12 +119,12 @@ export default function WaitlistSlide({ isActive }: WaitlistSlideProps) {
             className="glass-card neon-ring relative z-10 w-full max-w-[280px] rounded-3xl p-6"
           >
             <h1
-              className="mb-2 text-center text-2xl font-bold leading-tight tracking-tight text-white"
+              className="mb-2 text-center text-2xl font-bold leading-tight tracking-tight text-[#2b2b3a]"
               style={{ fontFamily: "var(--font-space-grotesk)" }}
             >
               Would you scroll games instead of videos?
             </h1>
-            <p className="mb-8 text-center text-sm leading-relaxed text-white/40">
+            <p className="mb-8 text-center text-sm leading-relaxed text-[#2b2b3a]/60">
               We&apos;re exploring a future where gameplay becomes content.
             </p>
 
@@ -136,7 +135,7 @@ export default function WaitlistSlide({ isActive }: WaitlistSlideProps) {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                className="w-full rounded-xl border border-white/8 bg-white/4 px-4 py-3 text-sm text-white placeholder:text-white/25 outline-none transition-all focus:border-indigo-500/40 focus:bg-white/6 focus:shadow-[0_0_20px_rgba(99,102,241,0.15)]"
+                className="w-full rounded-xl border-2 border-[#2b2b3a] bg-white px-4 py-3 text-sm text-[#2b2b3a] placeholder:text-[#2b2b3a]/35 outline-none"
               />
               <input
                 type="email"
@@ -144,13 +143,13 @@ export default function WaitlistSlide({ isActive }: WaitlistSlideProps) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full rounded-xl border border-white/8 bg-white/4 px-4 py-3 text-sm text-white placeholder:text-white/25 outline-none transition-all focus:border-indigo-500/40 focus:bg-white/6 focus:shadow-[0_0_20px_rgba(99,102,241,0.15)]"
+                className="w-full rounded-xl border-2 border-[#2b2b3a] bg-white px-4 py-3 text-sm text-[#2b2b3a] placeholder:text-[#2b2b3a]/35 outline-none"
               />
               <motion.button
                 type="submit"
                 disabled={loading}
                 whileTap={{ scale: 0.97 }}
-                className="neon-glow-indigo mt-1 w-full rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 py-3.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                className="neon-glow-indigo mt-1 w-full rounded-xl border-2 border-[#2b2b3a] bg-gradient-to-r from-sky-400 to-blue-500 py-3.5 text-sm font-semibold text-white shadow-[4px_4px_0_#2b2b3a] transition-opacity hover:opacity-90 disabled:opacity-50"
               >
                 {loading ? "Joining..." : "Join Waitlist"}
               </motion.button>
@@ -179,12 +178,12 @@ export default function WaitlistSlide({ isActive }: WaitlistSlideProps) {
               </svg>
             </motion.div>
             <h2
-              className="mb-2 text-2xl font-bold tracking-tight text-white neon-text"
+              className="mb-2 text-2xl font-bold tracking-tight text-[#2b2b3a]"
               style={{ fontFamily: "var(--font-space-grotesk)" }}
             >
               You&apos;re in.
             </h2>
-            <p className="text-sm text-white/40">
+            <p className="text-sm text-[#2b2b3a]/60">
               We&apos;ll let you know when more games arrive.
             </p>
           </motion.div>

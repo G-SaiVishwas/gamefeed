@@ -6,9 +6,10 @@ import { GAMES, TOTAL_SLIDES } from "@/lib/games/registry";
 import GameSlide from "@/components/GameSlide";
 import WaitlistSlide from "@/components/WaitlistSlide";
 import { startSession, track } from "@/lib/analytics";
+import { isGameInputLocked } from "@/lib/games/inputLock";
 
 const SWIPE_THRESHOLD = 60;
-const SLIDE_COLORS = ["#818cf8", "#c084fc", "#67e8f9", "#f472b6", "#6366f1"];
+const SLIDE_COLORS = ["#4ade80", "#3b82f6", "#a855f7", "#eab308", "#f97316"];
 
 export default function FeedContainer() {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -76,7 +77,7 @@ export default function FeedContainer() {
     };
 
     const handleTouchEnd = (e: TouchEvent) => {
-      if (isAnimatingRef.current) return;
+      if (isAnimatingRef.current || isGameInputLocked()) return;
       const deltaY = touchStartY.current - e.changedTouches[0].clientY;
       const deltaX = Math.abs(touchStartX.current - e.changedTouches[0].clientX);
       if (Math.abs(deltaY) < SWIPE_THRESHOLD || Math.abs(deltaY) < deltaX) return;
@@ -86,7 +87,7 @@ export default function FeedContainer() {
 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
-      if (isAnimatingRef.current) return;
+      if (isAnimatingRef.current || isGameInputLocked()) return;
       if (e.deltaY > 40) goToIndex(currentIndex + 1, "up");
       else if (e.deltaY < -40) goToIndex(currentIndex - 1, "down");
     };
@@ -115,7 +116,12 @@ export default function FeedContainer() {
   }, [slideHeight, currentIndex, y]);
 
   return (
-    <div ref={feedRef} className="relative h-full w-full overflow-hidden touch-pan-y">
+    <div ref={feedRef} className="relative h-full w-full overflow-hidden touch-none">
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-40 flex justify-center pt-2">
+        <span className="rounded-full bg-white/85 px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-[#2b2b3a] shadow-sm">
+          Swipe to change game
+        </span>
+      </div>
       <motion.div
         className="relative w-full will-change-transform"
         style={{ y, height: slideHeight * TOTAL_SLIDES }}
@@ -167,7 +173,7 @@ export default function FeedContainer() {
             className="text-xs font-bold uppercase tracking-[0.2em]"
             style={{
               fontFamily: "var(--font-space-grotesk)",
-              color: "rgba(255,255,255,0.25)",
+              color: "rgba(43,43,58,0.25)",
             }}
           >
             GameFeed

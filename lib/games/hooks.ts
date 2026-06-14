@@ -38,30 +38,66 @@ export function useGameLifecycle({
   return { complete, startedRef, completedRef };
 }
 
+/** Scale factor relative to a ~390×700 reference phone viewport. */
+export function gameScale(w: number, h: number): number {
+  return Math.min(w / 390, h / 700);
+}
+
+export interface CanvasFrame {
+  ctx: CanvasRenderingContext2D;
+  w: number;
+  h: number;
+  dpr: number;
+  scale: number;
+}
+
+/**
+ * Resize the canvas to its parent and apply the DPR transform.
+ * Call at the start of every animation frame — setting canvas.width resets
+ * the context transform, so a one-time resize hook is not enough.
+ */
+export function prepareCanvasFrame(
+  canvas: HTMLCanvasElement
+): CanvasFrame | null {
+  const parent = canvas.parentElement;
+  if (!parent) return null;
+
+  const dpr = window.devicePixelRatio || 1;
+  const w = parent.clientWidth;
+  const h = parent.clientHeight;
+  if (w <= 0 || h <= 0) return null;
+
+  const pw = Math.round(w * dpr);
+  const ph = Math.round(h * dpr);
+  if (canvas.width !== pw || canvas.height !== ph) {
+    canvas.width = pw;
+    canvas.height = ph;
+    canvas.style.width = `${w}px`;
+    canvas.style.height = `${h}px`;
+  }
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.imageSmoothingEnabled = true;
+
+  return { ctx, w, h, dpr, scale: gameScale(w, h) };
+}
+
+/** @deprecated Use prepareCanvasFrame inside the game loop instead. */
 export function useCanvasSize(
   canvasRef: React.RefObject<HTMLCanvasElement | null>
 ) {
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas?.parentElement) return;
 
-    const resize = () => {
-      const parent = canvas.parentElement;
-      if (!parent) return;
-      const dpr = window.devicePixelRatio || 1;
-      const w = parent.clientWidth;
-      const h = parent.clientHeight;
-      canvas.width = w * dpr;
-      canvas.height = h * dpr;
-      canvas.style.width = `${w}px`;
-      canvas.style.height = `${h}px`;
-      const ctx = canvas.getContext("2d");
-      if (ctx) ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    };
-
-    resize();
-    const observer = new ResizeObserver(resize);
-    observer.observe(canvas.parentElement!);
+    const observer = new ResizeObserver(() => {
+      prepareCanvasFrame(canvas);
+    });
+    observer.observe(canvas.parentElement);
+    prepareCanvasFrame(canvas);
     return () => observer.disconnect();
   }, [canvasRef]);
 }

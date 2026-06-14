@@ -17,9 +17,9 @@ export default function PhoneFrame({ children }: PhoneFrameProps) {
         <div
           className="relative rounded-[3rem] p-3"
           style={{
-            background: "linear-gradient(145deg, #2a2a38 0%, #1a1a24 50%, #0f0f16 100%)",
+            background: "linear-gradient(145deg, #f5efe6 0%, #e8e0d4 50%, #ddd4c8 100%)",
             boxShadow:
-              "0 0 0 1px rgba(255,255,255,0.08), 0 25px 80px rgba(0,0,0,0.6), 0 0 120px rgba(99,102,241,0.12), inset 0 1px 0 rgba(255,255,255,0.1)",
+              "0 0 0 1px rgba(43,43,58,0.12), 0 25px 80px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.8)",
           }}
         >
           {/* Side buttons (decorative) */}
@@ -29,7 +29,7 @@ export default function PhoneFrame({ children }: PhoneFrameProps) {
 
           {/* Screen area */}
           <div
-            className="relative overflow-hidden rounded-[2.25rem] bg-[#06060a]"
+            className="relative overflow-hidden rounded-[2.25rem] bg-[#fdf6e3]"
             style={{
               height: "min(92dvh, 880px)",
               aspectRatio: "9 / 19.5",
