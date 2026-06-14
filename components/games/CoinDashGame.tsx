@@ -12,7 +12,6 @@ const SPRITES = {
   walkA: "/sprites/platformer/character_green_walk_a.png",
   walkB: "/sprites/platformer/character_green_walk_b.png",
   jump: "/sprites/platformer/character_green_jump.png",
-  duck: "/sprites/platformer/character_green_duck.png",
   hit: "/sprites/platformer/character_green_hit.png",
   slimeA: "/sprites/platformer/slime_normal_walk_a.png",
   slimeB: "/sprites/platformer/slime_normal_walk_b.png",
@@ -39,7 +38,6 @@ interface Obstacle {
   h: number;
   kind: ObstacleKind;
   air: boolean;
-  airLow: boolean;
   frame: 0 | 1;
 }
 
@@ -69,7 +67,6 @@ export default function CoinDashGame({ isActive, onStart, onComplete }: GameComp
       distance: 0,
       hearts: 1,
       invulnUntil: 0,
-      ducking: false,
       jumping: false,
       vy: 0,
       playerY: 0,
@@ -97,21 +94,16 @@ export default function CoinDashGame({ isActive, onStart, onComplete }: GameComp
     };
 
     const spawn = (w: number, scale: number) => {
-      const standH = Math.round(48 * scale);
       const air = Math.random() < 0.45;
       if (air) {
         const kind: ObstacleKind = Math.random() < 0.5 ? "bee" : "fly";
-        const airLow = Math.random() < 0.65;
         state.obstacles.push({
           x: w + 40,
-          y: airLow
-            ? state.groundY - standH + Math.round(6 * scale)
-            : state.groundY - Math.round(120 * scale),
+          y: state.groundY - Math.round(120 * scale),
           w: Math.round(40 * scale),
           h: Math.round(34 * scale),
           kind,
           air: true,
-          airLow,
           frame: 0,
         });
       } else {
@@ -124,7 +116,6 @@ export default function CoinDashGame({ isActive, onStart, onComplete }: GameComp
           h: size,
           kind,
           air: false,
-          airLow: false,
           frame: 0,
         });
       }
@@ -148,25 +139,15 @@ export default function CoinDashGame({ isActive, onStart, onComplete }: GameComp
       }
     };
 
-    const onPointerDown = (e: PointerEvent) => {
+    const onPointerDown = () => {
       unlockAudio();
-      const rect = canvas.getBoundingClientRect();
-      const y = e.clientY - rect.top;
-      const h = state.layoutH || canvas.clientHeight;
-      if (y > h * 0.55) {
-        state.ducking = true;
-      } else if (!state.jumping) {
-        state.jumping = true;
-        state.vy = -11 * state.scale;
-        playGameSound("/sounds/sfx_jump.ogg", 0.4);
-      }
-    };
-    const onPointerUp = () => {
-      state.ducking = false;
+      if (state.jumping) return;
+      state.jumping = true;
+      state.vy = -11 * state.scale;
+      playGameSound("/sounds/sfx_jump.ogg", 0.4);
     };
 
     canvas.addEventListener("pointerdown", onPointerDown);
-    window.addEventListener("pointerup", onPointerUp);
 
     let animId = 0;
     const loop = (now: number) => {
@@ -189,7 +170,7 @@ export default function CoinDashGame({ isActive, onStart, onComplete }: GameComp
       state.distance += state.speed;
       state.score = Math.floor(state.distance / 10);
 
-      const playerH = state.ducking ? Math.round(26 * scale) : Math.round(48 * scale);
+      const playerH = Math.round(48 * scale);
       const playerW = Math.round(34 * scale);
       const playerX = Math.round(70 * scale);
       const jumpFloor = state.groundY - Math.round(48 * scale);
@@ -224,7 +205,7 @@ export default function CoinDashGame({ isActive, onStart, onComplete }: GameComp
       state.obstacles = state.obstacles.filter((o) => o.x > -80);
       state.collectibles = state.collectibles.filter((c) => c.x > -40);
 
-      const py = state.ducking ? state.groundY - playerH : state.playerY;
+      const py = state.playerY;
       const pickupR = Math.round(22 * scale);
 
       const playerCx = playerX + playerW / 2;
@@ -252,9 +233,7 @@ export default function CoinDashGame({ isActive, onStart, onComplete }: GameComp
         const hitDist = playerR + obstacleRadius(o);
         if (Math.hypot(playerCx - ocx, playerCy - ocy) >= hitDist) continue;
         if (o.air) {
-          if (o.airLow) {
-            if (!state.ducking) loseHeart(now);
-          } else if (!state.jumping || state.playerY > jumpFloor - Math.round(15 * scale)) {
+          if (!state.jumping || state.playerY > jumpFloor - Math.round(15 * scale)) {
             loseHeart(now);
           }
         } else if (!state.jumping || state.playerY > state.groundY - Math.round(70 * scale)) {
@@ -300,7 +279,6 @@ export default function CoinDashGame({ isActive, onStart, onComplete }: GameComp
 
       let playerImg = state.walkFrame ? sprites.walkB : sprites.walkA;
       if (state.jumping) playerImg = sprites.jump;
-      if (state.ducking) playerImg = sprites.duck;
       if (now < state.invulnUntil && Math.floor(now / 100) % 2 === 0) playerImg = sprites.hit;
       ctx.drawImage(playerImg, playerX, py, playerW, playerH);
 
@@ -320,7 +298,6 @@ export default function CoinDashGame({ isActive, onStart, onComplete }: GameComp
     return () => {
       cancelAnimationFrame(animId);
       canvas.removeEventListener("pointerdown", onPointerDown);
-      window.removeEventListener("pointerup", onPointerUp);
       state.running = false;
     };
   }, [isActive, sprites, complete]);

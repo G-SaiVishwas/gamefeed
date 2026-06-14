@@ -8,7 +8,7 @@ export const GAMES: GameMeta[] = [
   {
     id: "coin-dash",
     title: "Coin Dash",
-    hint: "Tap top to jump, bottom to duck — one life only",
+    hint: "Tap to jump — one life only",
     component: CoinDashGame,
   },
   {
