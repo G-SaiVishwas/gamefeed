@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, FormEvent } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { track } from "@/lib/analytics";
 
@@ -124,9 +125,16 @@ export default function WaitlistSlide({ isActive }: WaitlistSlideProps) {
             >
               Would you scroll games instead of videos?
             </h1>
-            <p className="mb-8 text-center text-sm leading-relaxed text-[#2b2b3a]/60">
+            <p className="mb-5 text-center text-sm leading-relaxed text-[#2b2b3a]/60">
               We&apos;re exploring a future where gameplay becomes content.
             </p>
+
+            <Link
+              href="/create"
+              className="mb-5 block w-full rounded-xl border-2 border-[#2b2b3a] bg-white py-3 text-center text-sm font-bold text-[#2b2b3a] shadow-[3px_3px_0_#2b2b3a] transition-transform active:scale-[0.98]"
+            >
+              Build a game — step by step
+            </Link>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-3">
               <input

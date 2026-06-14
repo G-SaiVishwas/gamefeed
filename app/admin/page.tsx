@@ -68,26 +68,26 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="aurora-bg min-h-screen px-6 py-12 text-white">
+    <div className="aurora-bg min-h-screen overflow-y-auto px-4 py-10 text-[#2b2b3a] sm:px-6 sm:py-12">
       <div className="mx-auto max-w-3xl">
         <div className="mb-8">
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-indigo-400">
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-[#3b82f6]">
             Admin
           </p>
           <h1
-            className="text-2xl font-bold tracking-tight neon-text"
+            className="text-2xl font-bold tracking-tight text-[#2b2b3a]"
             style={{ fontFamily: "var(--font-space-grotesk)" }}
           >
             Waitlist Signups
           </h1>
-          <p className="mt-2 text-sm text-white/40">
+          <p className="mt-2 text-sm text-[#2b2b3a]/60">
             View and export everyone who joined the waitlist.
           </p>
         </div>
 
         {!authed ? (
-          <form onSubmit={handleLogin} className="glass-card neon-ring max-w-sm rounded-2xl p-6">
-            <label className="mb-2 block text-xs font-medium uppercase tracking-widest text-white/40">
+          <form onSubmit={handleLogin} className="glass-card max-w-sm rounded-2xl p-6">
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-[#2b2b3a]/50">
               Admin Password
             </label>
             <input
@@ -95,40 +95,40 @@ export default function AdminPage() {
               value={token}
               onChange={(e) => setToken(e.target.value)}
               placeholder="Enter ADMIN_SECRET"
-              className="mb-4 w-full rounded-xl border border-white/8 bg-white/4 px-4 py-3 text-sm text-white placeholder:text-white/25 outline-none focus:border-indigo-500/40"
+              className="mb-4 w-full rounded-xl border-2 border-[#2b2b3a]/20 bg-white px-4 py-3 text-sm text-[#2b2b3a] placeholder:text-[#2b2b3a]/35 outline-none focus:border-[#3b82f6]"
             />
-            {error && <p className="mb-3 text-sm text-red-400">{error}</p>}
+            {error && <p className="mb-3 text-sm font-medium text-red-600">{error}</p>}
             <button
               type="submit"
               disabled={loading || !token}
-              className="neon-glow-indigo w-full rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 py-3 text-sm font-semibold disabled:opacity-50"
+              className="w-full rounded-xl border-2 border-[#2b2b3a] bg-gradient-to-r from-sky-400 to-blue-500 py-3 text-sm font-semibold text-white shadow-[3px_3px_0_#2b2b3a] disabled:opacity-50"
             >
               {loading ? "Loading..." : "Access Waitlist"}
             </button>
           </form>
         ) : (
           <>
-            <div className="mb-6 flex items-center justify-between">
-              <p className="font-mono text-sm text-white/50">
+            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="font-mono text-sm font-semibold text-[#2b2b3a]/70">
                 {entries.length} signup{entries.length !== 1 ? "s" : ""}
               </p>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => fetchEntries(token)}
-                  className="glass-card rounded-lg px-4 py-2 text-sm text-white/60 hover:text-white"
+                  className="rounded-lg border-2 border-[#2b2b3a] bg-white px-4 py-2 text-sm font-semibold text-[#2b2b3a] shadow-[2px_2px_0_#2b2b3a]"
                 >
                   Refresh
                 </button>
                 <button
                   onClick={() => exportCsv(entries)}
                   disabled={entries.length === 0}
-                  className="glass-card rounded-lg px-4 py-2 text-sm text-white/60 hover:text-white disabled:opacity-40"
+                  className="rounded-lg border-2 border-[#2b2b3a] bg-white px-4 py-2 text-sm font-semibold text-[#2b2b3a] shadow-[2px_2px_0_#2b2b3a] disabled:opacity-40"
                 >
                   Export CSV
                 </button>
                 <button
                   onClick={handleLogout}
-                  className="rounded-lg border border-white/10 px-4 py-2 text-sm text-white/40 hover:text-white"
+                  className="rounded-lg border-2 border-[#2b2b3a]/25 bg-white/80 px-4 py-2 text-sm font-medium text-[#2b2b3a]/70"
                 >
                   Logout
                 </button>
@@ -136,31 +136,36 @@ export default function AdminPage() {
             </div>
 
             {entries.length === 0 ? (
-              <div className="glass-card rounded-2xl p-12 text-center text-white/30">
+              <div className="glass-card rounded-2xl p-12 text-center text-[#2b2b3a]/45">
                 No signups yet.
               </div>
             ) : (
               <div className="glass-card overflow-hidden rounded-2xl">
-                <table className="w-full text-left text-sm">
-                  <thead>
-                    <tr className="border-b border-white/8 text-[10px] uppercase tracking-widest text-white/35">
-                      <th className="px-5 py-3">Name</th>
-                      <th className="px-5 py-3">Email</th>
-                      <th className="px-5 py-3">Signed Up</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {entries.map((entry) => (
-                      <tr key={entry.id} className="border-b border-white/5 hover:bg-white/2">
-                        <td className="px-5 py-3 font-medium text-white/80">{entry.name}</td>
-                        <td className="px-5 py-3 font-mono text-white/60">{entry.email}</td>
-                        <td className="px-5 py-3 font-mono text-xs text-white/35">
-                          {formatDate(entry.createdAt)}
-                        </td>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[520px] text-left text-sm">
+                    <thead>
+                      <tr className="border-b-2 border-[#2b2b3a]/10 bg-[#fdf6e3]/80 text-[10px] uppercase tracking-widest text-[#2b2b3a]/50">
+                        <th className="px-5 py-3 font-semibold">Name</th>
+                        <th className="px-5 py-3 font-semibold">Email</th>
+                        <th className="px-5 py-3 font-semibold">Signed Up</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {entries.map((entry) => (
+                        <tr
+                          key={entry.id}
+                          className="border-b border-[#2b2b3a]/8 hover:bg-[#fdf6e3]/50"
+                        >
+                          <td className="px-5 py-3 font-semibold text-[#2b2b3a]">{entry.name}</td>
+                          <td className="px-5 py-3 font-mono text-[#2b2b3a]/75">{entry.email}</td>
+                          <td className="px-5 py-3 font-mono text-xs text-[#2b2b3a]/55">
+                            {formatDate(entry.createdAt)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
           </>

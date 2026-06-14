@@ -28,15 +28,12 @@ function MetricCard({
 }) {
   return (
     <div className="glass-card rounded-2xl p-5">
-      <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-white/35">
+      <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-[#2b2b3a]/45">
         {label}
       </p>
-      <p
-        className="font-mono text-2xl font-light tabular-nums text-white"
-        style={{ textShadow: "0 0 20px rgba(99,102,241,0.2)" }}
-      >
+      <p className="font-mono text-2xl font-semibold tabular-nums text-[#2b2b3a]">
         {value}
-        {suffix && <span className="ml-1 text-base text-white/35">{suffix}</span>}
+        {suffix && <span className="ml-1 text-base text-[#2b2b3a]/40">{suffix}</span>}
       </p>
     </div>
   );
@@ -70,22 +67,22 @@ export default function AnalyticsPage() {
 
   if (!metrics) {
     return (
-      <div className="aurora-bg flex min-h-screen items-center justify-center text-white/40">
+      <div className="aurora-bg flex min-h-screen items-center justify-center text-[#2b2b3a]/50">
         Loading...
       </div>
     );
   }
 
   return (
-    <div className="aurora-bg min-h-screen px-6 py-12 text-white">
+    <div className="aurora-bg min-h-screen overflow-y-auto px-4 py-10 text-[#2b2b3a] sm:px-6 sm:py-12">
       <div className="mx-auto max-w-4xl">
-        <div className="mb-10 flex items-center justify-between">
+        <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-indigo-400">
+            <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-[#3b82f6]">
               Developer Panel
             </p>
             <h1
-              className="text-2xl font-bold tracking-tight neon-text"
+              className="text-2xl font-bold tracking-tight text-[#2b2b3a]"
               style={{ fontFamily: "var(--font-space-grotesk)" }}
             >
               GameFeed Analytics
@@ -94,13 +91,13 @@ export default function AnalyticsPage() {
           <div className="flex gap-2">
             <button
               onClick={refresh}
-              className="glass-card rounded-lg px-4 py-2 text-sm text-white/50 transition-all hover:text-white"
+              className="rounded-lg border-2 border-[#2b2b3a] bg-white px-4 py-2 text-sm font-semibold text-[#2b2b3a] shadow-[2px_2px_0_#2b2b3a]"
             >
               Refresh
             </button>
             <button
               onClick={handleReset}
-              className="rounded-lg border border-red-500/20 px-4 py-2 text-sm text-red-400/60 transition-all hover:border-red-500/40 hover:text-red-400"
+              className="rounded-lg border-2 border-red-300 bg-white px-4 py-2 text-sm font-semibold text-red-600"
             >
               Reset
             </button>
@@ -116,8 +113,8 @@ export default function AnalyticsPage() {
           <MetricCard label="Total Swipes" value={metrics.totalSwipes} />
         </div>
 
-        <div className="glass-card neon-ring rounded-2xl p-6">
-          <h2 className="mb-6 text-[10px] font-semibold uppercase tracking-[0.15em] text-white/35">
+        <div className="glass-card rounded-2xl p-6">
+          <h2 className="mb-6 text-[10px] font-semibold uppercase tracking-[0.15em] text-[#2b2b3a]/45">
             Completion Rates by Game
           </h2>
           <div className="space-y-5">
@@ -127,18 +124,17 @@ export default function AnalyticsPage() {
               return (
                 <div key={game.id}>
                   <div className="mb-2 flex items-center justify-between">
-                    <span className="text-sm font-medium text-white/70">{game.title}</span>
-                    <span className="font-mono text-xs tabular-nums text-white/40">
+                    <span className="text-sm font-semibold text-[#2b2b3a]">{game.title}</span>
+                    <span className="font-mono text-xs tabular-nums text-[#2b2b3a]/55">
                       {stats.rate.toFixed(1)}% ({stats.completed}/{stats.started})
                     </span>
                   </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-white/6">
+                  <div className="h-2 overflow-hidden rounded-full bg-[#2b2b3a]/10">
                     <div
                       className="h-full rounded-full transition-all duration-700"
                       style={{
                         width: `${stats.rate}%`,
                         background: color,
-                        boxShadow: `0 0 8px ${color}60`,
                       }}
                     />
                   </div>
@@ -148,7 +144,7 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        <p className="mt-8 text-center text-[10px] text-white/15">
+        <p className="mt-8 text-center text-[10px] text-[#2b2b3a]/40">
           Data stored locally. Swap provider for PostHog/Mixpanel.
         </p>
       </div>
