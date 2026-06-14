@@ -153,7 +153,7 @@ export default function CoinDashGame({ isActive, onStart, onComplete }: GameComp
       const rect = canvas.getBoundingClientRect();
       const y = e.clientY - rect.top;
       const h = state.layoutH || canvas.clientHeight;
-      if (y > h * 0.4) {
+      if (y > h * 0.55) {
         state.ducking = true;
       } else if (!state.jumping) {
         state.jumping = true;
