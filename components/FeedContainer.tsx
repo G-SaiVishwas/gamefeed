@@ -9,6 +9,7 @@ import { startSession, track } from "@/lib/analytics";
 import { isGameInputLocked } from "@/lib/games/inputLock";
 
 const SWIPE_THRESHOLD = 60;
+const BOTTOM_NAV_ZONE_PX = 72;
 const SLIDE_COLORS = ["#4ade80", "#3b82f6", "#a855f7", "#eab308", "#f97316"];
 
 export default function FeedContainer() {
@@ -21,6 +22,14 @@ export default function FeedContainer() {
   const initializedRef = useRef(false);
   const touchStartY = useRef(0);
   const touchStartX = useRef(0);
+  const navGestureStartedInBottomZone = useRef(false);
+
+  const isInBottomNavZone = useCallback((clientY: number) => {
+    const feed = feedRef.current;
+    if (!feed) return false;
+    const rect = feed.getBoundingClientRect();
+    return clientY >= rect.bottom - BOTTOM_NAV_ZONE_PX;
+  }, []);
 
   useEffect(() => {
     if (initializedRef.current) return;
@@ -71,15 +80,19 @@ export default function FeedContainer() {
     const feed = feedRef.current;
     if (!feed) return;
 
-    const handleTouchStart = (e: TouchEvent) => {
-      touchStartY.current = e.touches[0].clientY;
-      touchStartX.current = e.touches[0].clientX;
+    const handlePointerDown = (e: PointerEvent) => {
+      if (e.button !== 0) return;
+      touchStartY.current = e.clientY;
+      touchStartX.current = e.clientX;
+      navGestureStartedInBottomZone.current = isInBottomNavZone(e.clientY);
     };
 
-    const handleTouchEnd = (e: TouchEvent) => {
+    const handlePointerUp = (e: PointerEvent) => {
+      if (e.button !== 0) return;
       if (isAnimatingRef.current || isGameInputLocked()) return;
-      const deltaY = touchStartY.current - e.changedTouches[0].clientY;
-      const deltaX = Math.abs(touchStartX.current - e.changedTouches[0].clientX);
+      if (!navGestureStartedInBottomZone.current) return;
+      const deltaY = touchStartY.current - e.clientY;
+      const deltaX = Math.abs(touchStartX.current - e.clientX);
       if (Math.abs(deltaY) < SWIPE_THRESHOLD || Math.abs(deltaY) < deltaX) return;
       if (deltaY > 0) goToIndex(currentIndex + 1, "up");
       else goToIndex(currentIndex - 1, "down");
@@ -88,6 +101,7 @@ export default function FeedContainer() {
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
       if (isAnimatingRef.current || isGameInputLocked()) return;
+      if (!isInBottomNavZone(e.clientY)) return;
       if (e.deltaY > 40) goToIndex(currentIndex + 1, "up");
       else if (e.deltaY < -40) goToIndex(currentIndex - 1, "down");
     };
@@ -98,18 +112,18 @@ export default function FeedContainer() {
       else if (e.key === "ArrowUp" || e.key === "k") goToIndex(currentIndex - 1, "down");
     };
 
-    feed.addEventListener("touchstart", handleTouchStart, { passive: true });
-    feed.addEventListener("touchend", handleTouchEnd, { passive: true });
+    feed.addEventListener("pointerdown", handlePointerDown);
+    feed.addEventListener("pointerup", handlePointerUp);
     feed.addEventListener("wheel", handleWheel, { passive: false });
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      feed.removeEventListener("touchstart", handleTouchStart);
-      feed.removeEventListener("touchend", handleTouchEnd);
+      feed.removeEventListener("pointerdown", handlePointerDown);
+      feed.removeEventListener("pointerup", handlePointerUp);
       feed.removeEventListener("wheel", handleWheel);
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [currentIndex, goToIndex]);
+  }, [currentIndex, goToIndex, isInBottomNavZone]);
 
   useEffect(() => {
     if (slideHeight > 0) y.set(-currentIndex * slideHeight);
@@ -117,9 +131,13 @@ export default function FeedContainer() {
 
   return (
     <div ref={feedRef} className="relative h-full w-full overflow-hidden touch-none">
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-40 flex justify-center pt-2">
-        <span className="rounded-full bg-white/85 px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-[#2b2b3a] shadow-sm">
-          Swipe to change game
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-40 flex flex-col items-center pb-3">
+        <div
+          className="mb-1 h-1 w-10 rounded-full bg-[#2b2b3a]/20"
+          aria-hidden
+        />
+        <span className="rounded-full bg-white/90 px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-[#2b2b3a] shadow-sm">
+          Swipe up from here
         </span>
       </div>
       <motion.div

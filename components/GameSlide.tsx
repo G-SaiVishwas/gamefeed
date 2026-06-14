@@ -90,7 +90,7 @@ export default function GameSlide({ game, gameIndex, isActive }: GameSlideProps)
             {game.hint}
           </p>
           {gameIndex === 0 && (
-            <p className="mt-0.5 text-[10px] text-[#2b2b3a]/50">Swipe ↑ for the next game</p>
+            <p className="mt-0.5 text-[10px] text-[#2b2b3a]/50">Swipe up from the bottom for the next game</p>
           )}
         </div>
       </div>
