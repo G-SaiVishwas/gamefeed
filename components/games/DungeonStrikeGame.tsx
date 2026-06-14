@@ -71,7 +71,6 @@ const ENEMY_DEFS: Record<
 
 const MAX_MS = 45000;
 const COMBO_WINDOW_MS = 520;
-const SWIPE_MIN_PX = 28;
 
 function pickEnemyKind(kills: number, elapsed: number): EnemyKind {
   if (kills > 0 && kills % 10 === 0 && Math.random() < 0.45) return "dragon";
@@ -144,9 +143,6 @@ export default function DungeonStrikeGame({ isActive, onStart, onComplete }: Gam
       layoutW: 0,
       layoutH: 0,
       scale: 1,
-      pointerId: -1,
-      swipeStart: null as { x: number; y: number } | null,
-      swipeEnd: null as { x: number; y: number } | null,
     };
 
     queueMicrotask(() => {
@@ -232,12 +228,6 @@ export default function DungeonStrikeGame({ isActive, onStart, onComplete }: Gam
       for (const kind of kinds) spawnOne(w, h, scale, elapsed, ox, oy, kind);
     };
 
-    const cycleWeapon = () => {
-      if (state.unlockedWeapons <= 1) return;
-      state.weaponIdx = (state.weaponIdx + 1) % state.unlockedWeapons;
-      queueMicrotask(() => setWeaponLabel(currentWeapon().name));
-    };
-
     const performSlash = (angle: number) => {
       const weapon = currentWeapon();
       if (state.cooldown > 0) return;
@@ -320,58 +310,16 @@ export default function DungeonStrikeGame({ isActive, onStart, onComplete }: Gam
     };
 
     const onPointerDown = (e: PointerEvent) => {
-      if (state.pointerId !== -1) return;
       const rect = canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
-      state.pointerId = e.pointerId;
-      state.swipeStart = { x, y };
-      state.swipeEnd = { x, y };
-      canvas.setPointerCapture(e.pointerId);
-    };
-
-    const onPointerMove = (e: PointerEvent) => {
-      if (e.pointerId !== state.pointerId || !state.swipeStart) return;
-      const rect = canvas.getBoundingClientRect();
-      state.swipeEnd = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-    };
-
-    const onPointerUp = (e: PointerEvent) => {
-      if (e.pointerId !== state.pointerId) return;
-      const rect = canvas.getBoundingClientRect();
-      const endX = e.clientX - rect.left;
-      const endY = e.clientY - rect.top;
-      state.swipeEnd = { x: endX, y: endY };
-
-      if (state.swipeStart) {
-        const dx = endX - state.swipeStart.x;
-        const dy = endY - state.swipeStart.y;
-        const dist = Math.hypot(dx, dy);
-        if (dist < SWIPE_MIN_PX * state.scale) {
-          if (tryWeaponBarTap(endX, endY)) {
-            /* weapon selected */
-          } else if (tryWeaponBarTap(state.swipeStart.x, state.swipeStart.y)) {
-            cycleWeapon();
-          }
-        } else {
-          performSlash(Math.atan2(dy, dx));
-        }
-      }
-
-      state.pointerId = -1;
-      state.swipeStart = null;
-      state.swipeEnd = null;
-      try {
-        canvas.releasePointerCapture(e.pointerId);
-      } catch {
-        /* ignore */
-      }
+      if (tryWeaponBarTap(x, y)) return;
+      const cx = state.layoutW / 2;
+      const cy = state.layoutH / 2;
+      performSlash(Math.atan2(y - cy, x - cx));
     };
 
     canvas.addEventListener("pointerdown", onPointerDown);
-    canvas.addEventListener("pointermove", onPointerMove);
-    canvas.addEventListener("pointerup", onPointerUp);
-    canvas.addEventListener("pointercancel", onPointerUp);
 
     let animId = 0;
     const loop = (now: number) => {
@@ -513,21 +461,6 @@ export default function DungeonStrikeGame({ isActive, onStart, onComplete }: Gam
         ctx.restore();
       }
 
-      if (state.swipeStart && state.swipeEnd && state.pointerId !== -1) {
-        const dx = state.swipeEnd.x - state.swipeStart.x;
-        const dy = state.swipeEnd.y - state.swipeStart.y;
-        if (Math.hypot(dx, dy) > 8 * scale) {
-          ctx.strokeStyle = "rgba(168,85,247,0.45)";
-          ctx.lineWidth = Math.round(3 * scale);
-          ctx.setLineDash([Math.round(6 * scale), Math.round(4 * scale)]);
-          ctx.beginPath();
-          ctx.moveTo(state.swipeStart.x, state.swipeStart.y);
-          ctx.lineTo(state.swipeEnd.x, state.swipeEnd.y);
-          ctx.stroke();
-          ctx.setLineDash([]);
-        }
-      }
-
       drawParticles(ctx, state.particles);
 
       const barY = h - Math.round(52 * scale);
@@ -564,9 +497,6 @@ export default function DungeonStrikeGame({ isActive, onStart, onComplete }: Gam
     return () => {
       cancelAnimationFrame(animId);
       canvas.removeEventListener("pointerdown", onPointerDown);
-      canvas.removeEventListener("pointermove", onPointerMove);
-      canvas.removeEventListener("pointerup", onPointerUp);
-      canvas.removeEventListener("pointercancel", onPointerUp);
       state.running = false;
     };
   }, [isActive, sprites, complete]);
@@ -583,7 +513,7 @@ export default function DungeonStrikeGame({ isActive, onStart, onComplete }: Gam
     <div className="relative h-full w-full touch-none">
       <canvas ref={canvasRef} className="block h-full w-full" />
       <GameHud
-        title="Swipe Slasher"
+        title="Tap Slasher"
         score={score}
         accentColor="#a855f7"
         combo={combo > 1 ? combo : undefined}
