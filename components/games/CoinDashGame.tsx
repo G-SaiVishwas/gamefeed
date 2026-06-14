@@ -225,10 +225,14 @@ export default function CoinDashGame({ isActive, onStart, onComplete }: GameComp
       state.collectibles = state.collectibles.filter((c) => c.x > -40);
 
       const py = state.ducking ? state.groundY - playerH : state.playerY;
-      const pickupR = Math.round(30 * scale);
+      const pickupR = Math.round(22 * scale);
+
+      const playerCx = playerX + playerW / 2;
+      const playerCy = py + playerH / 2;
+      const playerR = Math.round(10 * scale);
 
       for (const c of state.collectibles) {
-        if (Math.abs(playerX - c.x) < pickupR && Math.abs(py + playerH / 2 - c.y) < pickupR) {
+        if (Math.hypot(playerCx - c.x, playerCy - c.y) < pickupR) {
           state.score += c.kind === "coin" ? 10 : 50;
           c.x = -999;
           playGameSound("/sounds/sfx_coin.ogg", 0.35);
@@ -236,13 +240,17 @@ export default function CoinDashGame({ isActive, onStart, onComplete }: GameComp
       }
       state.collectibles = state.collectibles.filter((c) => c.x > -40);
 
+      const obstacleRadius = (o: Obstacle) => {
+        if (o.kind === "slime") return Math.round(13 * scale);
+        if (o.kind === "saw") return Math.round(11 * scale);
+        return Math.round(10 * scale);
+      };
+
       for (const o of state.obstacles) {
-        const hit =
-          playerX + playerW > o.x &&
-          playerX < o.x + o.w &&
-          py + playerH > o.y &&
-          py < o.y + o.h;
-        if (!hit) continue;
+        const ocx = o.x + o.w / 2;
+        const ocy = o.y + o.h / 2;
+        const hitDist = playerR + obstacleRadius(o);
+        if (Math.hypot(playerCx - ocx, playerCy - ocy) >= hitDist) continue;
         if (o.air) {
           if (o.airLow) {
             if (!state.ducking) loseHeart(now);
